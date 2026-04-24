@@ -1,0 +1,582 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JKT48 DIGITAL THEATER - Era 2026</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --jkt-red: #e1000a;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --bg-black: #050505;
+            --font-main: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-main);
+            background-color: var(--bg-black);
+            color: white;
+            overflow-x: hidden;
+            height: 100vh;
+        }
+
+        /* LATAR BELAKANG ANIMASI */
+        .video-wrapper {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: -1; overflow: hidden;
+        }
+
+        .video-wrapper video {
+            min-width: 100%; min-height: 100%;
+            width: auto; height: auto;
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            object-fit: cover;
+            filter: brightness(0.15) saturate(1.2);
+        }
+
+        /* NAVIGASI ATAS */
+        header.nav-main {
+            position: fixed;
+            top: 0; width: 100%;
+            z-index: 50;
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+        }
+
+        .logo-box { display: flex; align-items: center; cursor: pointer; gap: 1rem; }
+        .logo-text { font-size: 1.8rem; font-weight: 800; letter-spacing: -2px; }
+        .logo-text span { color: var(--jkt-red); }
+
+        .rotation-badge {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 5px 12px;
+            background: rgba(225, 0, 10, 0.1);
+            border: 1px solid rgba(225, 0, 10, 0.3);
+            border-radius: 8px;
+        }
+
+        #globalTimer { color: var(--jkt-red); font-family: monospace; font-size: 1.1rem; }
+
+        /* SIDEBAR */
+        #sidebar {
+            position: fixed; top: 0; right: -100%;
+            width: 320px; height: 100%;
+            background: rgba(10, 0, 0, 0.98);
+            backdrop-filter: blur(40px);
+            z-index: 100;
+            transition: 0.5s cubic-bezier(0.77, 0, 0.175, 1);
+            border-left: 2px solid var(--jkt-red);
+            display: flex; flex-direction: column;
+            padding: 4rem 2rem;
+        }
+
+        #sidebar.active { right: 0; }
+
+        .sidebar-overlay {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            opacity: 0; visibility: hidden;
+            transition: 0.4s; z-index: 90;
+        }
+
+        .sidebar-overlay.active { opacity: 1; visibility: visible; }
+
+        .nav-item {
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 12px;
+            transition: 0.3s;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            cursor: pointer;
+            color: #888;
+        }
+
+        .nav-item:hover { background: var(--jkt-red); color: white; transform: translateX(-10px); }
+
+        /* CONTENT AREA */
+        .page-content {
+            display: none;
+            height: 100vh;
+            width: 100%;
+            overflow-y: auto;
+            padding: 6rem 1.5rem 2rem;
+        }
+
+        .page-content.active { display: block; animation: fadeIn 0.4s ease forwards; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* HOME PAGE CENTERED */
+        #homePage {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 0;
+        }
+
+        #homePage.active { display: flex; }
+
+        .hero h1 {
+            font-size: clamp(3rem, 12vw, 7rem);
+            font-weight: 900;
+            line-height: 0.85;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+
+        .hero p {
+            color: #888;
+            letter-spacing: 5px;
+            font-size: 0.7rem;
+            margin-bottom: 2rem;
+        }
+
+        /* GRID & COMPONENTS */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+        }
+
+        .btn-primary {
+            padding: 1rem 2rem;
+            background: var(--jkt-red);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-weight: 900;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(225, 0, 10, 0.4); }
+
+        .monitor-box {
+            width: 100%;
+            max-width: 900px;
+            aspect-ratio: 16/9;
+            background: black;
+            border-radius: 15px;
+            border: 2px solid var(--jkt-red);
+            margin: 1rem auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .monitor-box img, .monitor-box video { width: 100%; height: 100%; object-fit: contain; }
+
+        /* AUDIO VISUALIZER */
+        .audio-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+            height: 50px;
+        }
+
+        .bar {
+            width: 5px;
+            background: var(--jkt-red);
+            animation: barAnim 0.6s infinite ease-in-out;
+        }
+
+        @keyframes barAnim {
+            0%, 100% { height: 10px; }
+            50% { height: 45px; }
+        }
+
+        /* MODALS */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; background: rgba(0,0,0,0.9);
+            z-index: 1000; justify-content: center; align-items: center;
+            backdrop-filter: blur(15px);
+        }
+        .modal.active { display: flex; }
+        .modal-body { width: 90%; max-width: 400px; }
+
+        #toast {
+            position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+            background: white; color: black; padding: 10px 20px; border-radius: 50px;
+            font-weight: 800; font-size: 10px; z-index: 2000; opacity: 0; transition: 0.3s;
+        }
+
+        .member-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin: 1.5rem 0;
+        }
+
+        .member-item {
+            background: rgba(255,255,255,0.05);
+            padding: 8px; border-radius: 8px; text-align: center; font-size: 9px;
+        }
+
+        .status-tag {
+            font-size: 8px; font-weight: 900; padding: 4px 10px; border-radius: 4px; text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="video-wrapper">
+        <video id="bgVideo" autoplay muted loop playsinline>
+            <source src="FIGHT.mp4" type="video/mp4">
+        </video>
+    </div>
+
+    <header class="nav-main">
+        <div class="logo-box" onclick="showPage('home')">
+            <h1 class="logo-text">JKT<span>48</span></h1>
+            <div class="rotation-badge">
+                <span id="globalTimer">00:00</span>
+            </div>
+        </div>
+        <button onclick="toggleSidebar(true)" style="background:none; border:none; color:white; cursor:pointer;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+    </header>
+
+    <div id="overlay" class="sidebar-overlay" onclick="toggleSidebar(false)"></div>
+
+    <aside id="sidebar">
+        <div style="display:flex; justify-content:space-between; margin-bottom:2rem;">
+            <span style="font-weight:900; color:var(--jkt-red);">SINKRON 2026</span>
+            <button onclick="toggleSidebar(false)" style="background:none; border:none; color:white;">✕</button>
+        </div>
+        <nav>
+            <div class="nav-item" onclick="showPage('purchase')">Beli Tiket</div>
+            <div class="nav-item" onclick="showPage('vouchers')">Tiket Saya <span id="vCount" style="display:none; color:red; font-size:10px;">●</span></div>
+            <div class="nav-item" onclick="openLogin()">Monitoring Live</div>
+            <div class="nav-item" onclick="showPage('home')">Beranda</div>
+        </nav>
+    </aside>
+
+    <!-- BERANDA -->
+    <div id="homePage" class="page-content active hero">
+        <h1>DIGITAL<br><span style="color:var(--jkt-red)">THEATER</span></h1>
+        <p>JKT48 NEW GENERATION TRANSMISSION</p>
+        <button class="btn-primary" onclick="showPage('purchase')">MASUK SEKARANG</button>
+    </div>
+
+    <!-- JADWAL -->
+    <div id="purchasePage" class="page-content">
+        <h2 style="font-weight:900; border-left:5px solid red; padding-left:1rem; margin-bottom:1.5rem;">SHOW HARI INI</h2>
+        <div id="setlistGrid" class="grid-layout"></div>
+    </div>
+
+    <!-- TIKET SAYA -->
+    <div id="vouchersPage" class="page-content">
+        <h2 style="font-weight:900; border-left:5px solid red; padding-left:1rem; margin-bottom:1.5rem;">VAULT TIKET</h2>
+        <div id="voucherContainer" class="grid-layout" style="grid-template-columns: 1fr;">
+            <div class="glass-panel" style="text-align:center; padding:3rem; color:#444; font-size:10px;">BELUM ADA TIKET</div>
+        </div>
+    </div>
+
+    <!-- MONITOR USER -->
+    <div id="userMonitorPage" class="page-content" style="text-align:center;">
+        <div style="display:flex; justify-content:space-between; align-items:center; max-width:900px; margin:0 auto;">
+            <h3 style="font-weight:900;">SIGNAL TRANSMISSION</h3>
+            <span style="font-size:10px; color:#22c55e;">● ENCRYPTED</span>
+        </div>
+        <button id="unmuteAlert" class="btn-primary" style="margin:10px 0; font-size:8px; background:#222;" onclick="startAudio()">AKTIFKAN AUDIO SIARAN</button>
+        <div class="monitor-box" id="userFeed">
+            <p style="font-size:10px; color:#333;">MENUNGGU DATA ADMIN...</p>
+        </div>
+        <button class="btn-primary" style="background:#111; margin-top:1rem; border:1px solid #333;" onclick="showPage('home')">TUTUP</button>
+    </div>
+
+    <!-- ADMIN -->
+    <div id="adminMonitorPage" class="page-content">
+        <div class="grid-layout" style="grid-template-columns: 1fr 1.5fr;">
+            <div class="glass-panel">
+                <h3 style="color:var(--jkt-red); font-weight:900; margin-bottom:1.5rem;">MASTER CONTROL</h3>
+                
+                <div style="margin-bottom:1rem;">
+                    <p style="font-size:9px; color:#555; margin-bottom:5px;">SIARAN VIDEO + SOUND</p>
+                    <button class="btn-primary" style="width:100%; font-size:8px;" onclick="document.getElementById('upVid').click()">UNGGAH VIDEO</button>
+                </div>
+
+                <div style="margin-bottom:1rem;">
+                    <p style="font-size:9px; color:#555; margin-bottom:5px;">SIARAN FOTO + SOUND (OPSIONAL)</p>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn-primary" style="flex:1; font-size:8px; background:#333;" onclick="document.getElementById('upImg').click()">GAMBAR</button>
+                        <button class="btn-primary" style="flex:1; font-size:8px; background:#333;" onclick="document.getElementById('upAud').click()">AUDIO</button>
+                    </div>
+                </div>
+
+                <div style="margin-bottom:1rem;">
+                    <p style="font-size:9px; color:#555; margin-bottom:5px;">AKSES USER</p>
+                    <div style="display:flex; gap:5px;">
+                        <input id="uCode" type="text" placeholder="KODE" style="flex:1; background:black; border:1px solid #333; color:white; padding:8px; border-radius:8px; font-size:10px;">
+                        <button onclick="setUCode()" style="background:var(--jkt-red); border:none; color:white; padding:0 15px; border-radius:8px; font-size:9px;">SET</button>
+                    </div>
+                </div>
+
+                <button class="btn-primary" style="width:100%; background:#222; font-size:9px;" onclick="resetAll()">RESET TOTAL</button>
+                
+                <input type="file" id="upImg" accept="image/*" style="display:none;" onchange="handleAdminMedia(this, 'image')">
+                <input type="file" id="upVid" accept="video/*" style="display:none;" onchange="handleAdminMedia(this, 'video')">
+                <input type="file" id="upAud" accept="audio/*" style="display:none;" onchange="handleAdminMedia(this, 'audio')">
+            </div>
+
+            <div class="glass-panel">
+                <p style="font-size:10px; font-weight:900; margin-bottom:10px;">PREVIEW PENYIARAN</p>
+                <div class="monitor-box" id="adminPreview" style="margin:0; border-color:#222;">
+                    <span style="font-size:10px; color:#222;">STANDBY</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL LOGIN -->
+    <div id="loginModal" class="modal">
+        <div class="glass-panel modal-body" style="text-align:center;">
+            <h3 style="margin-bottom:1.5rem;">ACCESS KEY</h3>
+            <input id="lInput" type="text" placeholder="MASUKKAN KODE" style="width:100%; background:black; border:1px solid #333; color:white; padding:12px; border-radius:12px; text-align:center; font-size:1.2rem; margin-bottom:1rem;">
+            <button class="btn-primary" style="width:100%;" onclick="doLogin()">MASUK</button>
+            <p onclick="closeM('loginModal')" style="font-size:10px; margin-top:1rem; cursor:pointer; color:#444;">BATAL</p>
+        </div>
+    </div>
+
+    <!-- MODAL MEMBER -->
+    <div id="memModal" class="modal">
+        <div class="glass-panel modal-body" style="max-width:500px">
+            <h3 id="mTitle" style="font-weight:900; color:var(--jkt-red);">SETLIST</h3>
+            <div id="mGrid" class="member-grid"></div>
+            <div style="background:black; padding:1rem; border-radius:10px; display:flex; justify-content:space-between;">
+                <span style="font-size:10px; color:#555;">GATEWAY AKTIF</span>
+                <span id="tSec" style="color:var(--jkt-red); font-weight:900;">10s</span>
+            </div>
+            <button class="btn-primary" style="width:100%; margin-top:1rem;" onclick="toast('ID DISALIN')">COPY PAYMENT ID</button>
+        </div>
+    </div>
+
+    <!-- MODAL SUKSES -->
+    <div id="sucModal" class="modal">
+        <div class="glass-panel modal-body" style="text-align:center;">
+            <h2 style="color:#22c55e;">SUCCESS</h2>
+            <p style="font-size:10px; margin:1rem 0;">TIKET DIGITAL TELAH TERKONFIRMASI.</p>
+            <button class="btn-primary" onclick="saveV()">SIMPAN TIKET</button>
+        </div>
+    </div>
+
+    <div id="toast">NOTIFIKASI</div>
+
+    <script>
+        const SETS = ["PERTARUHAN CINTA", "RAMUNE", "GANDENG TANGAN", "PAJAMA DRIVE", "PASSION 200%", "DREAM BAKUDAN", "ITADAKI"];
+        const MEMS = ["Gracie", "Greesel", "Fiony", "Ella", "Indah", "Kathrina", "Marsha", "Muthe", "Raisha", "Lia", "Amanda", "Callie", "Erine", "Levi", "Cynthia", "Daisy", "Danella", "Elin", "Gendis", "Chelsea"];
+        
+        let vault = [];
+        let aCode = "admin0608";
+        let uCode = "";
+        let curSet = "";
+        let timer;
+        
+        // Simpan state media untuk Foto + Audio
+        let currentAdminAudio = null;
+        let currentAdminImg = null;
+
+        function getSeed() { return Math.floor(Date.now() / (1000 * 60 * 50)); }
+        function sRand(s) { let x = Math.sin(s) * 10000; return x - Math.floor(x); }
+        function shuffle(a, s) {
+            let m = a.length, t, i;
+            while(m) { i = Math.floor(sRand(s++) * m--); t = a[m]; a[m] = a[i]; a[i] = t; }
+            return a;
+        }
+
+        function update() {
+            const now = Date.now();
+            const rem = (50 * 60 * 1000) - (now % (50 * 60 * 1000));
+            const sec = Math.floor(rem / 1000);
+            document.getElementById('globalTimer').innerText = `${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`;
+            renderSets(getSeed());
+        }
+
+        function renderSets(s) {
+            const g = document.getElementById('setlistGrid');
+            if(!g) return;
+            const shuf = shuffle([...SETS], s);
+            let h = "";
+            shuf.slice(0,3).forEach(n => h += cCard(n, true));
+            shuf.slice(3,6).forEach(n => h += cCard(n, false));
+            g.innerHTML = h;
+        }
+
+        function cCard(n, a) {
+            return `
+                <div class="glass-panel" style="display:flex; flex-direction:column; justify-content:space-between; min-height:180px;">
+                    <div>
+                        <span class="status-tag" style="background:${a?'#e1000a':'#333'}">${a?'LIVE':'SOON'}</span>
+                        <h3 style="margin-top:10px; font-weight:900;">${n}</h3>
+                    </div>
+                    <button class="btn-primary" style="width:100%; font-size:8px; ${!a?'opacity:0.2':''}" ${a?`onclick="openM('${n}')"`:''}>${a?'BELI TIKET':'COMING SOON'}</button>
+                </div>
+            `;
+        }
+
+        function showPage(id) {
+            document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+            document.getElementById(id + 'Page').classList.add('active');
+            window.scrollTo(0,0);
+            toggleSidebar(false);
+            if(id === 'vouchers') renderV();
+        }
+
+        function toggleSidebar(o) {
+            document.getElementById('sidebar').classList.toggle('active', o);
+            document.getElementById('overlay').classList.toggle('active', o);
+        }
+
+        function openLogin() { document.getElementById('loginModal').classList.add('active'); }
+        
+        function doLogin() {
+            const v = document.getElementById('lInput').value;
+            if(v === aCode) { showPage('adminMonitor'); closeM('loginModal'); }
+            else if(uCode && v === uCode) { showPage('userMonitor'); closeM('loginModal'); }
+            else { toast("KODE SALAH"); }
+            document.getElementById('lInput').value = "";
+        }
+
+        function handleAdminMedia(input, type) {
+            const file = input.files[0]; if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = e.target.result;
+                if(type === 'image') currentAdminImg = data;
+                if(type === 'audio') currentAdminAudio = data;
+                if(type === 'video') { currentAdminAudio = null; currentAdminImg = null; broadcastVideo(data); return; }
+                
+                if(currentAdminImg || currentAdminAudio) broadcastMixedMedia();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function broadcastVideo(data) {
+            const html = `<video id="mainVid" src="${data}" autoplay loop playsinline style="width:100%; height:100%;"></video>`;
+            applyFeed(html);
+            toast("VIDEO & SOUND DISIARKAN");
+        }
+
+        function broadcastMixedMedia() {
+            let html = `<div style="width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#000;">`;
+            if(currentAdminImg) html += `<img src="${currentAdminImg}" style="max-height:70%; object-fit:contain;">`;
+            if(currentAdminAudio) {
+                html += `
+                    <div class="audio-bars" style="margin-top:15px;">${'<div class="bar"></div>'.repeat(10)}</div>
+                    <audio id="mainAud" src="${currentAdminAudio}" autoplay loop></audio>
+                `;
+            }
+            html += `</div>`;
+            applyFeed(html);
+            toast("MEDIA MIXED DISIARKAN");
+        }
+
+        function applyFeed(html) {
+            document.getElementById('adminPreview').innerHTML = html;
+            document.getElementById('userFeed').innerHTML = html;
+            // Munculkan tombol unmute karena kebijakan autoplay browser
+            document.getElementById('unmuteAlert').style.display = 'inline-block';
+        }
+
+        function startAudio() {
+            const v = document.getElementById('mainVid');
+            const a = document.getElementById('mainAud');
+            if(v) { v.muted = false; v.play(); }
+            if(a) { a.play(); }
+            document.getElementById('unmuteAlert').style.display = 'none';
+            toast("SUARA AKTIF");
+        }
+
+        function setUCode() {
+            uCode = document.getElementById('uCode').value;
+            document.getElementById('curCode').innerText = "KODE: " + uCode;
+            document.getElementById('uCode').value = "";
+            toast("KODE USER DIPERBARUI");
+        }
+
+        function openM(t) {
+            curSet = t;
+            document.getElementById('mTitle').innerText = t;
+            const mG = document.getElementById('mGrid');
+            mG.innerHTML = "";
+            shuffle([...MEMS], getSeed() + 7).slice(0,12).forEach(m => mG.innerHTML += `<div class="member-item">${m}</div>`);
+            document.getElementById('memModal').classList.add('active');
+            let s = 10;
+            clearInterval(timer);
+            timer = setInterval(() => {
+                s--; document.getElementById('tSec').innerText = s + "s";
+                if(s <= 0) { clearInterval(timer); closeM('memModal'); document.getElementById('sucModal').classList.add('active'); }
+            }, 1000);
+        }
+
+        function saveV() {
+            vault.push(curSet);
+            document.getElementById('vCount').style.display = "inline";
+            closeM('sucModal');
+            showPage('vouchers');
+            toast("TIKET DISIMPAN");
+        }
+
+        function renderV() {
+            const c = document.getElementById('voucherContainer');
+            if(vault.length === 0) return;
+            c.innerHTML = "";
+            vault.forEach(v => {
+                c.innerHTML += `<div class="glass-panel" style="display:flex; justify-content:space-between; align-items:center;">
+                    <h3 style="font-weight:900;">${v}</h3>
+                    <button class="btn-primary" onclick="openLogin()">VIEW STREAM</button>
+                </div>`;
+            });
+        }
+
+        function closeM(id) { document.getElementById(id).classList.remove('active'); clearInterval(timer); }
+        function toast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.opacity = 1; setTimeout(() => t.style.opacity = 0, 2000); }
+        function resetAll() { 
+            document.getElementById('adminPreview').innerHTML = "STANDBY"; 
+            document.getElementById('userFeed').innerHTML = "MENUNGGU DATA ADMIN..."; 
+            currentAdminAudio = null; currentAdminImg = null;
+            toast("FEED BERHASIL DIRESET"); 
+        }
+
+        setInterval(update, 1000);
+        update();
+    </script>
+</body>
+</html>
+
+
