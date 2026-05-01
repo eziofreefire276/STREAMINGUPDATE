@@ -197,7 +197,7 @@
             position: relative;
         }
 
-        .monitor-box img, .monitor-box video { width: 100%; height: 100%; object-fit: contain; }
+        .monitor-box img, .monitor-box video, .monitor-box iframe { width: 100%; height: 100%; border: none; object-fit: contain; }
 
         /* AUDIO VISUALIZER */
         .audio-bars {
@@ -326,8 +326,17 @@
             <div class="glass-panel">
                 <h3 style="color:var(--jkt-red); font-weight:900; margin-bottom:1.5rem;">MASTER CONTROL</h3>
                 
+                <!-- NEW: YOUTUBE PORTAL -->
+                <div style="margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:1px solid #222;">
+                    <p style="font-size:9px; color:#555; margin-bottom:5px;">YOUTUBE TRANSMISSION</p>
+                    <div style="display:flex; gap:5px;">
+                        <input id="ytUrl" type="text" placeholder="URL YOUTUBE" style="flex:1; background:black; border:1px solid #333; color:white; padding:8px; border-radius:8px; font-size:10px;">
+                        <button onclick="portYouTube()" style="background:#ff0000; border:none; color:white; padding:0 15px; border-radius:8px; font-size:9px; font-weight:bold;">PORT</button>
+                    </div>
+                </div>
+
                 <div style="margin-bottom:1rem;">
-                    <p style="font-size:9px; color:#555; margin-bottom:5px;">SIARAN VIDEO + SOUND</p>
+                    <p style="font-size:9px; color:#555; margin-bottom:5px;">SIARAN VIDEO LOKAL + SOUND</p>
                     <button class="btn-primary" style="width:100%; font-size:8px;" onclick="document.getElementById('upVid').click()">UNGGAH VIDEO</button>
                 </div>
 
@@ -345,6 +354,7 @@
                         <input id="uCode" type="text" placeholder="KODE" style="flex:1; background:black; border:1px solid #333; color:white; padding:8px; border-radius:8px; font-size:10px;">
                         <button onclick="setUCode()" style="background:var(--jkt-red); border:none; color:white; padding:0 15px; border-radius:8px; font-size:9px;">SET</button>
                     </div>
+                    <p id="curCode" style="font-size:8px; color:var(--jkt-red); margin-top:5px;"></p>
                 </div>
 
                 <button class="btn-primary" style="width:100%; background:#222; font-size:9px;" onclick="resetAll()">RESET TOTAL</button>
@@ -407,7 +417,6 @@
         let curSet = "";
         let timer;
         
-        // Simpan state media untuk Foto + Audio
         let currentAdminAudio = null;
         let currentAdminImg = null;
 
@@ -472,6 +481,29 @@
             document.getElementById('lInput').value = "";
         }
 
+        // --- YOUTUBE PORT LOGIC ---
+        function portYouTube() {
+            const url = document.getElementById('ytUrl').value;
+            if(!url) return toast("MASUKKAN URL");
+            
+            let vidId = "";
+            if(url.includes("v=")) vidId = url.split("v=")[1].split("&")[0];
+            else if(url.includes("youtu.be/")) vidId = url.split("youtu.be/")[1].split("?")[0];
+            else if(url.includes("embed/")) vidId = url.split("embed/")[1].split("?")[0];
+
+            if(!vidId) return toast("URL TIDAK VALID");
+
+            const embedUrl = `https://www.youtube.com/embed/${vidId}?autoplay=1&mute=0&rel=0`;
+            const html = `<iframe src="${embedUrl}" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            
+            currentAdminAudio = null;
+            currentAdminImg = null;
+            
+            applyFeed(html);
+            document.getElementById('unmuteAlert').style.display = 'none'; // Iframe handles its own sound
+            toast("YOUTUBE TRANSMITTED");
+        }
+
         function handleAdminMedia(input, type) {
             const file = input.files[0]; if(!file) return;
             const reader = new FileReader();
@@ -509,8 +541,11 @@
         function applyFeed(html) {
             document.getElementById('adminPreview').innerHTML = html;
             document.getElementById('userFeed').innerHTML = html;
-            // Munculkan tombol unmute karena kebijakan autoplay browser
-            document.getElementById('unmuteAlert').style.display = 'inline-block';
+            
+            // Show unmute button only for local video/audio, not for YouTube iframe
+            if(!html.includes("iframe")) {
+                document.getElementById('unmuteAlert').style.display = 'inline-block';
+            }
         }
 
         function startAudio() {
@@ -524,7 +559,7 @@
 
         function setUCode() {
             uCode = document.getElementById('uCode').value;
-            document.getElementById('curCode').innerText = "KODE: " + uCode;
+            document.getElementById('curCode').innerText = "KODE AKTIF: " + uCode;
             document.getElementById('uCode').value = "";
             toast("KODE USER DIPERBARUI");
         }
@@ -570,6 +605,7 @@
             document.getElementById('adminPreview').innerHTML = "STANDBY"; 
             document.getElementById('userFeed').innerHTML = "MENUNGGU DATA ADMIN..."; 
             currentAdminAudio = null; currentAdminImg = null;
+            document.getElementById('ytUrl').value = "";
             toast("FEED BERHASIL DIRESET"); 
         }
 
